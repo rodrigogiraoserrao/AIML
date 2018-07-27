@@ -105,11 +105,11 @@ class Robot {
   
   void move(float[][] room) {
     Move m = t.getAction(room, this.xpos, this.ypos);
-    if (this.xpos + m.dx < 0 || this.xpos + m.dx >= WIDTH || m.dx == 0) {
-      if (this.ypos + m.dy < 0 || this.ypos + m.dy >= HEIGHT || m.dy == 0) {
-        this.counter++;
-        return;
-      }
+    if (this.xpos + m.dx < 0 || this.xpos + m.dx >= WIDTH || 
+        this.ypos + m.dy < 0 || this.ypos + m.dy >= HEIGHT ||
+        (m.dx == 0 && m.dy == 0)) {
+      this.counter++;
+      return;
     }
     this.xpos += m.dx;
     this.ypos += m.dy;
