@@ -1,9 +1,15 @@
 package simulators;
 
 import resources.*;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 import processing.core.PApplet;
 
 public class BasicSimulator extends PApplet {
@@ -12,10 +18,24 @@ public class BasicSimulator extends PApplet {
 	private static int STEPS = 400;
 	private static final int NROBOTS = 100;
 	private static final int NROOMS = 100;
-	private static final int NGENS = 50;
+	private static final int NGENS = 5;
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
+		
+		// create a logging file
+		FileWriter fw;
+		PrintWriter out;
+		try {
+			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm");
+			LocalDateTime now = LocalDateTime.now();
+			fw = new FileWriter("logs/"+dtf.format(now)+".log");
+			out = new PrintWriter(fw);
+		} catch (IOException e) {
+			// default to writing to the console
+			e.printStackTrace();
+			out = new PrintWriter(System.out);
+		}
 		
 		ArrayList<Robot> robots = new ArrayList<Robot>();
 		for (int i = 0; i < BasicSimulator.NROBOTS; ++i) {
@@ -46,7 +66,7 @@ public class BasicSimulator extends PApplet {
 			// the robots have cleaned, sort them out
 			Collections.sort(robots, new RobotComparator());
 			// print the best scoring robot
-			System.out.println("Gen " + n + ": score = " + robots.get(0).getScore());
+			out.println("Gen " + n + ": score = " + robots.get(0).getScore());
 			// leave the best 45% percent alone,
 			// create another 45% with mutations from the first
 			// create new, random 10%
@@ -69,7 +89,9 @@ public class BasicSimulator extends PApplet {
 		// Watch one animation of the last robot
 		Robot best = robots.get(0);
 		WatchRobotAnimation.watchAnimation(best, rooms.get(0));
-		System.out.println(best.getTree());
+		out.println(best.getTree());
+		
+		out.close();
 	}
 
 }
