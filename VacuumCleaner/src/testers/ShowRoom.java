@@ -26,7 +26,7 @@ public class ShowRoom extends PApplet {
 	public void draw() {
 		for (int i = 0; i < ShowRoom.WIDTH; ++i) {
 			for (int j = 0; j < ShowRoom.HEIGHT; ++j) {
-				fill((int)(255*this.r.get(i,j)));
+				fill((int)(255*(1-this.r.get(i,j))));
 				rect(i*ShowRoom.CELLSIZE, j*ShowRoom.CELLSIZE, ShowRoom.CELLSIZE, ShowRoom.CELLSIZE);
 			}
 		}
