@@ -8,6 +8,7 @@ public class WatchRobotAnimation extends PApplet {
 	private static int CELLSIZE = 20;
 	private static int WIDTH;
 	private static int HEIGHT;
+	private boolean drawn;
 	
 	public static void watchAnimation(Robot robot, Room room) {
 		WatchRobotAnimation.robot = robot;
@@ -22,14 +23,11 @@ public class WatchRobotAnimation extends PApplet {
 	}
 	
 	public void setup() {
-		surface.setSize(WatchRobotAnimation.CELLSIZE*WatchRobotAnimation.WIDTH, WatchRobotAnimation.CELLSIZE*WatchRobotAnimation.HEIGHT);
+		surface.setSize(WatchRobotAnimation.CELLSIZE*WatchRobotAnimation.WIDTH,
+						WatchRobotAnimation.CELLSIZE*WatchRobotAnimation.HEIGHT);
 	}
 	
-	public void draw() {
-		// move the robot
-		WatchRobotAnimation.robot.move();
-		// clean the dirt
-		WatchRobotAnimation.robot.clean();
+	private void draw_board() {
 		// draw the room
 		for (int i = 0; i < WatchRobotAnimation.WIDTH; ++i) {
 			for (int j = 0; j < WatchRobotAnimation.HEIGHT; ++j) {
@@ -38,11 +36,26 @@ public class WatchRobotAnimation extends PApplet {
 				rect(i*WatchRobotAnimation.CELLSIZE, j*WatchRobotAnimation.CELLSIZE, WatchRobotAnimation.CELLSIZE, WatchRobotAnimation.CELLSIZE);
 			}
 		}
+	}
+	
+	public void draw() {
+		if (! this.drawn) {
+			this.drawn = true;
+			this.draw_board();
+		}
+		fill(255, 255, 255);
+		rect(WatchRobotAnimation.robot.getXpos()*WatchRobotAnimation.CELLSIZE, WatchRobotAnimation.robot.getYpos()*WatchRobotAnimation.CELLSIZE,
+				WatchRobotAnimation.CELLSIZE, WatchRobotAnimation.CELLSIZE);
+		// move the robot
+		WatchRobotAnimation.robot.move();
+		// clean the dirt
+		WatchRobotAnimation.robot.clean();
+		// draw the room
 		fill(255, 0, 0);
 		rect(WatchRobotAnimation.robot.getXpos()*WatchRobotAnimation.CELLSIZE, WatchRobotAnimation.robot.getYpos()*WatchRobotAnimation.CELLSIZE,
 				WatchRobotAnimation.CELLSIZE, WatchRobotAnimation.CELLSIZE);
 		
-		// delay the next draw
+		// delay the next frame
 		delay(50);
 	}
 }

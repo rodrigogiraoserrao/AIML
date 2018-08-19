@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import processing.core.PApplet;
@@ -18,7 +17,7 @@ public class BasicSimulator extends PApplet {
 	private static int STEPS = 400;
 	private static final int NROBOTS = 100;
 	private static final int NROOMS = 100;
-	private static final int NGENS = 5;
+	private static final int NGENS = 100;
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -94,13 +93,4 @@ public class BasicSimulator extends PApplet {
 		out.close();
 	}
 
-}
-
-class RobotComparator implements Comparator<Robot> {
-	public int compare(Robot r1, Robot r2) {
-		// we want the robots with higher scores in the front
-		if (r1.getScore() < r2.getScore()) return 1;
-		else if (r1.getScore() == r2.getScore()) return 0;
-		else return -1;
-	}
 }

@@ -14,8 +14,6 @@ public class DecisionTree implements Serializable {
 	Observe lookAt;			// where to look at to decide how to act
 	DecisionTree lt, rt;	// left and right branches
 	double threshold;		// threshold for the binary decision tree
-	int nodeID;				// unique node ID inside the tree
-	int maxNodeID;			// biggest node ID in the subtree
 	
 	public DecisionTree(Observe lookAt, double threshold, DecisionTree lt, DecisionTree rt) {
 		this.lookAt = lookAt;

@@ -1,6 +1,10 @@
 package resources;
 
-public class Robot {
+import java.io.Serializable;
+
+public class Robot implements Serializable {
+	private static final long serialVersionUID = 1L;
+	
 	private DecisionTree tree;
 	private int xpos, ypos;
 	private int roomWidth, roomHeight;

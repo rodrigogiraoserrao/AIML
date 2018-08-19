@@ -3,20 +3,36 @@ package simulators;
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
-import javax.swing.JMenuBar;
-import javax.swing.JMenu;
-import javax.swing.JPanel;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import javax.swing.JScrollPane;
+import java.awt.BorderLayout;
+import javax.swing.JTextArea;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
+import resources.DecisionTree;
+import resources.Robot;
+import resources.RobotComparator;
+import resources.Room;
+import resources.WatchRobotAnimation;
+
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.awt.event.ActionEvent;
+
 public class WBasicSimulator {
 
 	private JFrame frame;
-	private JTextField textField;
-	private JTextField textField_1;
+	private JTextArea logArea;
+	private JTextField tf_robots;
+	private JTextField tf_rooms;
+	private JTextField tf_generations;
+	
+	private static final int ROOM_WIDTH = 20;
+	private static final int ROOM_HEIGHT = 20;
+	private static final int NSTEPS = 400;
 
 	/**
 	 * Launch the application.
@@ -50,63 +66,121 @@ public class WBasicSimulator {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 		
-		JPanel simulation_panel = new JPanel();
-		simulation_panel.setVisible(false);
-		simulation_panel.setBounds(0, 0, 434, 241);
-		frame.getContentPane().add(simulation_panel);
+		logArea = new JTextArea();
+		logArea.setEditable(false);;
+		logArea.setBounds(199, 0, 235, 262);
+		logArea.setWrapStyleWord(true);
+		JScrollPane scrollPane = new JScrollPane(logArea);
+		scrollPane.setBounds(199, 0, 235, 262);
+		scrollPane.setVerticalScrollBarPolicy(
+				JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		frame.getContentPane().add(scrollPane);
 		
-		JLabel lblNewLabel = new JLabel("This test");
-		simulation_panel.add(lblNewLabel);
-		
-		JPanel settings_panel = new JPanel();
-		settings_panel.setVisible(false);
-		settings_panel.setBounds(0, 0, 434, 241);
-		frame.getContentPane().add(settings_panel);
-		settings_panel.setLayout(null);
+		JButton btnSimulate = new JButton("Simulate");
+		btnSimulate.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				JTextField[] tfs = {tf_robots, tf_rooms, tf_generations};
+				int[] vars = new int[tfs.length];
+				for (int i = 0; i < tfs.length; ++i) {
+					try {
+						vars[i] = Integer.parseInt(tfs[i].getText());
+						if (vars[i] <= 0) throw new Exception("Must have positive integer");
+					} catch (Exception e) {
+						e.printStackTrace();
+						tfs[i].requestFocus();
+						return;
+					}
+				}
+				int nrobots = vars[0];
+				int nrooms = vars[1];
+				int ngens = vars[2];
+				
+				ArrayList<Robot> robots = new ArrayList<Robot>();
+				for (int i = 0; i < nrobots; ++i) {
+					robots.add(new Robot(DecisionTree.generateRandomTree()));
+				}
+				
+				ArrayList<Room> rooms = new ArrayList<Room>();
+				for (int i = 0; i < nrooms; ++i) rooms.add(null);
+
+				for (int n = 0; n < ngens; ++n) {
+					// clear robot scores from previous generation and init the rooms
+					for (Robot r : robots) r.resetScore();
+					for (int i = 0; i < nrooms; ++i) {
+						rooms.set(i, new Room(WBasicSimulator.ROOM_WIDTH, WBasicSimulator.ROOM_HEIGHT));
+					}
+					
+					for (Robot r: robots) {
+						for (Room room: rooms) {
+							r.setRoom(room);
+							r.clean();
+							for (int i = 0; i < WBasicSimulator.NSTEPS; ++i) {
+								r.move();
+								r.clean();
+							}
+						}
+					}
+					// the robots have cleaned, sort them out
+					Collections.sort(robots, new RobotComparator());
+					logArea.append("Gen " + n + ": score " + robots.get(0).getScore() + "\n");
+					// leave the best 45% percent alone,
+					// create another 45% with mutations from the first
+					// create new, random 10%
+					int cap = (int)(0.45*nrobots);
+					for (int i = 0; i < cap; ++i) {
+						// copy the tree; reset score
+						DecisionTree t = robots.get(i).getTree().getCopy();
+						robots.get(i).resetScore();
+						// mutate it
+						while (!t.mutate());
+						// create a new robot and save it
+						robots.set(i+cap, new Robot(t));
+					}
+					for (int i = 2*cap; i < nrobots; ++i) {
+						DecisionTree t = DecisionTree.generateRandomTree();
+						robots.set(i, new Robot(t));
+					}
+				}
+				// watch the best animation
+				Robot best = robots.get(0);
+				WatchRobotAnimation.watchAnimation(best, rooms.get(0));
+				
+			}
+		});
+		btnSimulate.setBounds(53, 202, 89, 23);
+		frame.getContentPane().add(btnSimulate);
 		
 		JLabel lblNumberOfRobots = new JLabel("Number of robots:");
-		lblNumberOfRobots.setBounds(10, 11, 108, 14);
-		settings_panel.add(lblNumberOfRobots);
+		lblNumberOfRobots.setBounds(22, 22, 167, 14);
+		frame.getContentPane().add(lblNumberOfRobots);
+		
+		tf_robots = new JTextField();
+		tf_robots.setHorizontalAlignment(SwingConstants.RIGHT);
+		tf_robots.setText("100");
+		tf_robots.setBounds(103, 45, 86, 20);
+		frame.getContentPane().add(tf_robots);
+		tf_robots.setColumns(10);
 		
 		JLabel lblNumberOfRooms = new JLabel("Number of rooms:");
-		lblNumberOfRooms.setBounds(10, 36, 108, 14);
-		settings_panel.add(lblNumberOfRooms);
+		lblNumberOfRooms.setBounds(22, 77, 167, 14);
+		frame.getContentPane().add(lblNumberOfRooms);
 		
-		textField = new JTextField();
-		textField.setHorizontalAlignment(SwingConstants.RIGHT);
-		textField.setText("100");
-		textField.setBounds(156, 8, 86, 20);
-		settings_panel.add(textField);
-		textField.setColumns(10);
+		tf_rooms = new JTextField();
+		tf_rooms.setHorizontalAlignment(SwingConstants.RIGHT);
+		tf_rooms.setText("100");
+		tf_rooms.setBounds(103, 100, 86, 20);
+		frame.getContentPane().add(tf_rooms);
+		tf_rooms.setColumns(10);
 		
-		textField_1 = new JTextField();
-		textField_1.setText("100");
-		textField_1.setHorizontalAlignment(SwingConstants.RIGHT);
-		textField_1.setBounds(156, 33, 86, 20);
-		settings_panel.add(textField_1);
-		textField_1.setColumns(10);
+		JLabel lblNumberOfGenerations = new JLabel("Number of generations:");
+		lblNumberOfGenerations.setBounds(22, 132, 167, 14);
+		frame.getContentPane().add(lblNumberOfGenerations);
 		
-		JMenuBar menuBar = new JMenuBar();
-		frame.setJMenuBar(menuBar);
-		
-		JMenu mnSettings = new JMenu("Settings");
-		mnSettings.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mousePressed(MouseEvent e) {
-				simulation_panel.setVisible(false);
-				settings_panel.setVisible(true);
-			}
-		});
-		menuBar.add(mnSettings);
-		
-		JMenu mnSimulation = new JMenu("Simulation");
-		mnSimulation.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mousePressed(MouseEvent arg0) {
-				settings_panel.setVisible(false);
-				simulation_panel.setVisible(true);
-			}
-		});
-		menuBar.add(mnSimulation);
+		tf_generations = new JTextField();
+		tf_generations.setText("50");
+		tf_generations.setHorizontalAlignment(SwingConstants.RIGHT);
+		tf_generations.setBounds(103, 155, 86, 20);
+		frame.getContentPane().add(tf_generations);
+		tf_generations.setColumns(10);
 	}
 }
