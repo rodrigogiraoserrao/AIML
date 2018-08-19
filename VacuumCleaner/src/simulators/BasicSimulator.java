@@ -2,8 +2,10 @@ package simulators;
 
 import resources.*;
 
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,9 +27,9 @@ public class BasicSimulator extends PApplet {
 		// create a logging file
 		FileWriter fw;
 		PrintWriter out;
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm");
+		LocalDateTime now = LocalDateTime.now();
 		try {
-			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm");
-			LocalDateTime now = LocalDateTime.now();
 			fw = new FileWriter("logs/"+dtf.format(now)+".log");
 			out = new PrintWriter(fw);
 		} catch (IOException e) {
@@ -37,6 +39,7 @@ public class BasicSimulator extends PApplet {
 		}
 		
 		ArrayList<Robot> robots = new ArrayList<Robot>();
+		ArrayList<Robot> bestRobots = new ArrayList<Robot>();
 		for (int i = 0; i < BasicSimulator.NROBOTS; ++i) {
 			DecisionTree tree = DecisionTree.generateRandomTree();
 			robots.add(new Robot(tree));
@@ -64,8 +67,11 @@ public class BasicSimulator extends PApplet {
 			}
 			// the robots have cleaned, sort them out
 			Collections.sort(robots, new RobotComparator());
-			// print the best scoring robot
+			// print the best scoring robot and save it for later
 			out.println("Gen " + n + ": score = " + robots.get(0).getScore());
+			// create a deep copy of the robot
+			bestRobots.add(new Robot(robots.get(0).getTree().getCopy()));
+			
 			// leave the best 45% percent alone,
 			// create another 45% with mutations from the first
 			// create new, random 10%
@@ -91,6 +97,16 @@ public class BasicSimulator extends PApplet {
 		out.println(best.getTree());
 		
 		out.close();
+		
+		String saveFile = "saves/"+dtf.format(now)+".gen";
+		try {
+			FileOutputStream fos = new FileOutputStream(saveFile);
+			ObjectOutputStream oos = new ObjectOutputStream(fos);
+			oos.writeObject(bestRobots);
+			oos.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 }
