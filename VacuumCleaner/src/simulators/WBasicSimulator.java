@@ -95,56 +95,18 @@ public class WBasicSimulator {
 				int nrooms = vars[1];
 				int ngens = vars[2];
 				
-				ArrayList<Robot> robots = new ArrayList<Robot>();
-				for (int i = 0; i < nrobots; ++i) {
-					robots.add(new Robot(DecisionTree.generateRandomTree()));
-				}
+				ArrayList<Robot> best = BasicSimulator.makeBasicSimulation(
+						WBasicSimulator.ROOM_WIDTH,
+						WBasicSimulator.ROOM_HEIGHT,
+						WBasicSimulator.NSTEPS,
+						nrobots,
+						nrooms,
+						ngens
+				);
 				
-				ArrayList<Room> rooms = new ArrayList<Room>();
-				for (int i = 0; i < nrooms; ++i) rooms.add(null);
-
-				for (int n = 0; n < ngens; ++n) {
-					// clear robot scores from previous generation and init the rooms
-					for (Robot r : robots) r.resetScore();
-					for (int i = 0; i < nrooms; ++i) {
-						rooms.set(i, new Room(WBasicSimulator.ROOM_WIDTH, WBasicSimulator.ROOM_HEIGHT));
-					}
-					
-					for (Robot r: robots) {
-						for (Room room: rooms) {
-							r.setRoom(room);
-							r.clean();
-							for (int i = 0; i < WBasicSimulator.NSTEPS; ++i) {
-								r.move();
-								r.clean();
-							}
-						}
-					}
-					// the robots have cleaned, sort them out
-					Collections.sort(robots, new RobotComparator());
-					logArea.append("Gen " + n + ": score " + robots.get(0).getScore() + "\n");
-					// leave the best 45% percent alone,
-					// create another 45% with mutations from the first
-					// create new, random 10%
-					int cap = (int)(0.45*nrobots);
-					for (int i = 0; i < cap; ++i) {
-						// copy the tree; reset score
-						DecisionTree t = robots.get(i).getTree().getCopy();
-						robots.get(i).resetScore();
-						// mutate it
-						while (!t.mutate());
-						// create a new robot and save it
-						robots.set(i+cap, new Robot(t));
-					}
-					for (int i = 2*cap; i < nrobots; ++i) {
-						DecisionTree t = DecisionTree.generateRandomTree();
-						robots.set(i, new Robot(t));
-					}
+				for (int i = 0; i < best.size(); ++i) {
+					logArea.append("Gen " + (i+1) + ": score " + best.get(i).getScore() + "\n");
 				}
-				// watch the best animation
-				Robot best = robots.get(0);
-				WatchRobotAnimation.watchAnimation(best, rooms.get(0));
-				
 			}
 		});
 		btnSimulate.setBounds(53, 202, 89, 23);

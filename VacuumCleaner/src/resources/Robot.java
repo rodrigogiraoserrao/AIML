@@ -32,6 +32,10 @@ public class Robot implements Serializable {
 		return this.score;
 	}
 	
+	public void setScore(double score) {
+		this.score = score;
+	}
+	
 	public void resetScore() {
 		this.score = 0;
 	}
