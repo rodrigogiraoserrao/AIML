@@ -77,9 +77,6 @@ public class BasicSimulator extends PApplet {
 		ArrayList<Room> rooms = new ArrayList<Room>();
 		
 		for (int n = 0; n < NGENS; ++n) {
-			// increment the available number of steps
-			//if (n % 5 == 0) BasicSimulator.STEPS += 5;
-			
 			rooms.clear();
 			for (int i = 0; i < NROOMS; ++i) {
 				rooms.add(new Room(ROOMWIDTH, ROOMHEIGHT));

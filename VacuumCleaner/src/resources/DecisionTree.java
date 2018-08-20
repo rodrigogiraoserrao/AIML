@@ -10,10 +10,10 @@ public class DecisionTree implements Serializable {
 	private static final double MUTATION_RATE = 0.01;	// rate at which nodes mutate
 	private static final double GROWTH_RATE = 0.1;		// rate at which leafs grow, assuming they will mutate
 	private static final double AMPUTATION_RATE = 0.03;	// rate at which trees become leafs, assuming they will mutate
-	Move action;			// tree with only an "action" node
-	Observe lookAt;			// where to look at to decide how to act
-	DecisionTree lt, rt;	// left and right branches
-	double threshold;		// threshold for the binary decision tree
+	public Move action;			// tree with only an "action" node
+	public Observe lookAt;			// where to look at to decide how to act
+	public DecisionTree lt, rt;	// left and right branches
+	public double threshold;		// threshold for the binary decision tree
 	
 	public DecisionTree(Observe lookAt, double threshold, DecisionTree lt, DecisionTree rt) {
 		this.lookAt = lookAt;
@@ -60,7 +60,12 @@ public class DecisionTree implements Serializable {
 					this.threshold = R.nextDouble();
 					this.lookAt = Observe.getRandomObserve();
 					this.action = null;
-				} else this.action = Move.getRandomMove();
+				} else {
+					Move old = this.action;
+					do {
+						this.action = Move.getRandomMove();
+					} while (old == this.action);
+				}
 			}
 			else {	// regular node
 				if (DecisionTree.R.nextDouble() < DecisionTree.AMPUTATION_RATE) { // amputate the subtree
@@ -74,7 +79,10 @@ public class DecisionTree implements Serializable {
 					if (r < 1./3) {	// new threshold
 						this.threshold = DecisionTree.R.nextDouble();
 					} else if (r < 2./3) { // new observation cell
-						this.lookAt = Observe.getRandomObserve();
+						Observe old = this.lookAt;
+						do {
+							this.lookAt = Observe.getRandomObserve();
+						} while (old == this.lookAt);
 					} else { // swap left with right subtrees
 						DecisionTree temp = this.lt;
 						this.lt = this.rt;
@@ -107,7 +115,7 @@ public class DecisionTree implements Serializable {
 	
 	private String toString(int lvl) {
 		String tabs = "";
-		for (int i = 0; i < lvl; ++i) tabs = tabs + "  ";
+		for (int i = 0; i < lvl; ++i) tabs = tabs + "    ";
 		if (this.action != null) {
 			return tabs + "go to " + this.action + "\n";
 		} else {
