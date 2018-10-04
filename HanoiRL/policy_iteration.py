@@ -1,0 +1,68 @@
+from hanoi_mdp import *
+from random import choice
+
+N = 4
+
+gamma = 0.9
+
+all_states = define_states(N)
+actions = [a+b for a in ["L","C","R"] for b in ["L","C","R"]]
+
+def extract_policy(V):
+    """Given the values of all states, build the policy that
+        maximizes the expected return"""
+    pi = dict()
+    for state in all_states:
+        best_action = actions[0]
+        go_to, reward = transition(state, actions[0])
+        best_value = reward + gamma*V[tuplify(go_to)]
+        for action in actions[1:]:
+            go_to, reward = transition(state, action)
+            t = reward + gamma*V[tuplify(go_to)]
+            if t > best_value:
+                best_value = t
+                best_action = action
+        pi[tuplify(state)] = best_action
+    return pi
+
+# initialize V
+V = {tuplify(state): 0 for state in all_states}
+# initialize pi
+pi = extract_policy(V)
+policy_has_changed = True
+iters = 0
+while policy_has_changed:
+    iters += 1
+    # update all the values until convergence
+    max_change = 1  # biggest change found over all states,
+                    # used as stopping criterion
+    i = 0
+    max_iters = pow(10, N)
+    while max_change > 0.001 and i < max_iters:
+        max_change = 0
+        for state in all_states:
+            m = -10000
+            action = pi[tuplify(state)]
+            go_to, reward = transition(state, action)
+            m = reward + gamma*V[tuplify(go_to)]
+            max_change = max(max_change, abs(m - V[tuplify(state)]))
+            V[tuplify(state)] = m
+        i += 1
+    if i == max_iters:
+        print("NO CONVERGENCE GUARANTEED")
+    # supposedly the values converged, now extract the policy
+    pi_ = extract_policy(V)
+    policy_has_changed = False
+    for key in pi_.keys():
+        if pi_[key] != pi[key]:
+            policy_has_changed = True
+            pi[key] = pi_[key]
+print("Took {} iterations".format(iters))
+
+state = [[i for i in range(N, 0, -1)],[],[]]
+old_state = None
+while old_state != state:
+    old_state = state
+    state, _ = transition(state, pi[tuplify(state)])
+    print(old_state)
+print(state)
