@@ -59,6 +59,7 @@ while policy_has_changed:
             pi[key] = pi_[key]
 print("Took {} iterations".format(iters))
 
+# solve the Tower of Hanoi
 state = [[i for i in range(N, 0, -1)],[],[]]
 old_state = None
 while old_state != state:
