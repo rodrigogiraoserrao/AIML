@@ -49,6 +49,7 @@ def create_policy(V):
             return best_action
     return policy
 
+# solve the Tower of Hanoi
 state = [[i for i in range(N, 0, -1)],[],[]]
 old_state = None
 pi = create_policy(V)
