@@ -14,11 +14,11 @@ for state in all_states:
     state_idx[dictify(state)] = s
     s += 1
 
-# initialize Q with 0s
+# initialize Q with random values
 # access Q as Q[state index][action index]
 Q1 = [[random()-0.5 for action in actions] for state in all_states]
 Q2 = [[random()-0.5 for action in actions] for state in all_states]
-# the value of the final state is infinite
+# the value of the final state is 0
 Q1[state_idx[dictify(FINAL_STATE)]] = [0 for action in actions]
 Q2[state_idx[dictify(FINAL_STATE)]] = [0 for action in actions]
 
@@ -36,6 +36,8 @@ def maximizeQ(Q, s):
     return best_action, best_value
 
 def maximizeQs(Qa, Qb, s):
+    """Choose the action that would maximize the joint Qa,Qb in the given state
+        returns argmax_a (Qa(s,a)+Qb(s,a)), max_a (Qa(s,a)+Qb(s,a))"""
     idx = state_idx[dictify(s)]
     best_value = Qa[idx][0] + Qb[idx][0]
     best_action = actions[0]
@@ -47,30 +49,21 @@ def maximizeQs(Qa, Qb, s):
     return best_action, best_value
 
 simulations = 1000
-eps = 1
+eps = 0.1
 for n in range(simulations):
-    # keep adjusting eps with time
-    eps = 0.1
-    state = [[i for i in range(N, 0, -1)],[],[]]
-    #print("going to start sim")
+    state = choice(all_states[1:])
     # run the simulation until we stay in a final state two times in a row
     while state != FINAL_STATE:
-        #print("starting the iteration")
         # with eps probability, ignore our belief of what the best action is
         # and instead act randomly
         if random() < eps:
-            #print("\t act randomly")
             action = choice(actions)
-            #print("\t lets just {}".format(action))
         else:
-            #print("\t act with max belief")
-            #print("\t " + str(Q[state_idx[dictify(state)]]))
             action, _ = maximizeQs(Q1, Q2, state)
-            #print("\t to max out {} we must {}".format(state, action))
         ai = actions.index(action)
         si = state_idx[dictify(state)]
         next_state, reward = transition(state, action)
-        # update the Q value
+        # update the Q value; randomly assign the Qi to be updated
         if random() < 0.5:
             Qa = Q1
             Qb = Q2
