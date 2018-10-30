@@ -1,7 +1,7 @@
 from hanoi_mdp import *
 from random import choice, random
 
-N = 3
+N = 4
 
 gamma = 0.9
 learning_rate = 0.1
@@ -14,7 +14,7 @@ for state in all_states:
     state_idx[dictify(state)] = s
     s += 1
 
-# initialize Q with 0s
+# initialize Q with random small values
 # access Q as Q[state index][action index]
 Q = [[random()-0.5 for action in actions] for state in all_states]
 # the value of the final state is 0
@@ -33,12 +33,13 @@ def maximizeQ(Q, s):
             best_action = actions[i]
     return best_action, best_value
 
-simulations = 5000
-eps = 0.1
+simulations = 1000
+eps = 1
 for n in range(simulations):
+    eps = 1 - n/simulations # go from 100% to 0% exploration rate
     state = choice(all_states[1:])
     # a list of all the states and actions we go through
-    # run the simulation until we stay in a final state two times in a row
+    # run the simulation until we get to a final state
     while state != FINAL_STATE:
         # with eps probability, ignore our belief of what the best action is
         # and instead act randomly
@@ -46,12 +47,11 @@ for n in range(simulations):
             action = choice(actions)
         else:
             action, _ = maximizeQ(Q, state)
-        experience.append([state, action])
         ai = actions.index(action)
         si = state_idx[dictify(state)]
         state, reward = transition(state, action)
         # update the Q value
-        if game_is_done(state):
+        if state == FINAL_STATE:
             Q[si][ai] = (1-learning_rate)*Q[si][ai] + learning_rate*reward
         else:
             _, future_value = maximizeQ(Q, state)

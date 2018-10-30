@@ -43,7 +43,6 @@ while policy_has_changed:
         max_change = 0
         # skip the final state, no need to touch that
         for state in all_states[1:]:
-            m = -10000
             action = pi[dictify(state)]
             go_to, reward = transition(state, action)
             m = reward + gamma*V[dictify(go_to)]

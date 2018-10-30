@@ -49,10 +49,11 @@ def maximizeQs(Qa, Qb, s):
     return best_action, best_value
 
 simulations = 1000
-eps = 0.1
+eps = 1
 for n in range(simulations):
+    eps = 1 - n/simulations # go from 100% to 0% exploration rate
     state = choice(all_states[1:])
-    # run the simulation until we stay in a final state two times in a row
+    # run the simulation until we get to a final state
     while state != FINAL_STATE:
         # with eps probability, ignore our belief of what the best action is
         # and instead act randomly
@@ -70,7 +71,7 @@ for n in range(simulations):
         else:
             Qa = Q2
             Qb = Q1
-        if game_is_done(state):
+        if state == FINAL_STATE:
             Qa[si][ai] = (1-learning_rate)*Qa[si][ai] + learning_rate*reward
         else:
             _, future_value = maximizeQ(Qb, next_state)
