@@ -25,6 +25,10 @@ class NeuralNetwork(object):
         ]
 
     def forward(self, x):
+        """
+        Given a (column) vector x, performs a forward pass with the given
+        vector; returns the result of the forward pass.
+        """
         x = np.array(x)
         if len(x.shape) == 1:
             x = np.expand_dims(x, -1)
