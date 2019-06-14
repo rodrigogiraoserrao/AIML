@@ -23,6 +23,7 @@ class NeuralNetwork(object):
                 # vector with random entries
                 np.random.randn(sizes[idx+1], 1) for idx in range(self._depth - 1)
         ]
+        self._intermediates = []
 
     def forward(self, x):
         """
@@ -50,6 +51,28 @@ class NeuralNetwork(object):
             self._intermediates.append((pre_nonlin, post_nonlin))
             acc = post_nonlin[::, ::]
         return acc
+
+    def loss(self, output):
+        """
+        Taken a (column) vector with the expected result, compute
+        the mean squared error with respect to the last forward pass.
+        Also stores the gradients induced by the expected outcome.
+        Returns 1/2(sum((y_hat - y)^2))
+        """
+        out = np.array(output)
+        if len(out.shape) == 1:
+            out = np.expand_dims(out, -1)
+        elif len(out.shape) == 2:
+            if out.shape[0] != self._sizes[0] and out.shape[1] == self._sizes[0]:
+                out = out.T
+            else:
+                ValueError("Unexpected input of shape {}".format(out.shape))
+        else:
+            ValueError("Input has too many dimensions ({})".format(len(out.shape)))
+        net_outs = self._intermediates[-1][-1]
+        loss = 0.5*np.sum((out - net_outs)**2)
+
+        return loss
 
 if __name__ == "__main__":
     nn = NeuralNetwork((2, 5, 2))
