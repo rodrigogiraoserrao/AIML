@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import resources.Robot;
 import resources.Room;
 
+final boolean SAVE_FRAMES = true;
+
 final int WIDTH = 20;
 final int HEIGHT = 20;
 final Room room = new Room(WIDTH, HEIGHT);
@@ -42,7 +44,7 @@ void setup() {
 
 void draw() {
   if (stepsLeft <= 0) {
-    idx += 10;
+    idx += robots.size();
     if (idx >= robots.size()) {
       noLoop();
       return;
@@ -79,7 +81,11 @@ void draw() {
     oldX = currentRobot.getXpos();
     oldY = currentRobot.getYpos();
   }
-  delay(100);
+  if (SAVE_FRAMES && idx+1 == robots.size()) {
+    saveFrame("frames/frame#####.png");
+  } else {
+    delay(50);
+  }
 }
 
 void draw_room(Room r) {
