@@ -35,9 +35,16 @@ class NeuralNetwork(object):
                 ValueError("Unexpected input of shape {}".format(x.shape))
         else:
             ValueError("Input has too many dimensions ({})".format(len(x.shape)))
-            
+
+        self._intermediates = []
+        acc = x
         for mat, bias in zip(self._weight_matrices, self._bias_vectors):
-            acc = np.dot(mat, acc) + bias
+            pre_nonlin = np.dot(mat, acc) + bias
+            ## apply the ReLU non-linearity
+            post_nonlin = np.zeros(pre_nonlin.shape)
+            post_nonlin[pre_nonlin > 0] = pre_nonlin[pre_nonlin > 0]
+            self._intermediates.append((pre_nonlin, post_nonlin))
+            acc = post_nonlin[::, ::]
         return acc
 
 if __name__ == "__main__":
@@ -46,3 +53,4 @@ if __name__ == "__main__":
     print(nn._bias_vectors)
 
     print(nn.forward(np.array([1,2])))
+    print(nn._intermediates)
