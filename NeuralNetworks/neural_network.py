@@ -52,15 +52,36 @@ class LeakyReLU(ActivationFunction):
         out[x < 0] = self.slope
         return out
 
+class ReLU(LeakyReLU):
+    def __init__(self):
+        super(ReLU, self).__init__(0)
+
+class Sigmoid(ActivationFunction):
+    def __init__(self):
+        super(Sigmoid, self).__init__()
+
+    def forward(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def backward(self, x):
+        forward = self.forward(x)
+        return forward*(1 - forward)
+
 class NeuralNetwork(object):
-    def __init__(self, sizes):
+    def __init__(self, sizes, *, nonlinearities=None, lr=0.01):
         """
         Initializes a fully connected neural network with len(sizes) layers,
-        where sizes[0] is the input size, sizes[-1] is the output size and
-        all the values in between are sizes of hidden layers
+            where sizes[0] is the input size, sizes[-1] is the output size and
+            all the values in between are sizes of hidden layers.
+        Can take an additional argument nonlinearities, either an iterable
+            of instantiated ActivationFunction objects of length len(sizes)
+            or a single instance of an ActivationFunction, in which case that
+            same activation function is used in between every layer
+            Defaults to LeakyReLU(0.1)
         """
         self._sizes = sizes
         self._depth = len(sizes)
+        self._lr = lr
 
         # we assume inputs will be column vectors
         self._weight_matrices = [
@@ -75,9 +96,17 @@ class NeuralNetwork(object):
                 # vector with random entries
                 np.random.randn(sizes[idx+1], 1) for idx in range(self._depth - 1)
         ]
-        self._activation_functions = [
-            LeakyReLU(0.1) for idx in range(self._depth - 1)
-        ]
+        if nonlinearities is None:
+            nonlinearities = LeakyReLU(0.1)
+        if isinstance(nonlinearities, ActivationFunction):
+            self._activation_functions = [
+                nonlinearities for idx in range(self._depth - 1)
+            ]
+        elif hasattr("len", nonlinearities) and \
+                                len(nonlinearities) == self._depth - 1:
+            self._activation_functions = nonlinearities[::]
+        else:
+            ValueError("Could not understand the ActivationFunctions provided")
         # store the intermediate computations to enable computing the gradients
         self._intermediates = []
         # store the gradients to enable batch gradient updates
@@ -155,23 +184,18 @@ class NeuralNetwork(object):
             dLdb = dfdpre*dLdpos.T
             # accumulate
             prevW, prevb = self._grads[t]
-            # print("preFront {}".format(preFront))
-            # print("dfdpre {}".format(dfdpre))
-            # print("pos.T {}".format(pos.T))
-            # print("dposdW {}".format(dposdW))
-            # print("dLdpos {}".format(dLdpos))
-            # print("dLdW {}".format(dLdW))
             self._grads[t] = (prevW + dLdW, prevb + dLdb)
 
         return loss
 
-    def backprop(self):
+    def backprop(self, learning_rate=None):
         """
         Alters the weights and biases with the gradients stored
         """
+        lr = self._lr if learning_rate is None else learning_rate
         for i in range(self._depth - 1):
-            self._weight_matrices[i] -= 0.01*self._grads[i][0]/self._passes_done
-            self._bias_vectors[i] -= 0.01*self._grads[i][1]/self._passes_done
+            self._weight_matrices[i] -= lr*self._grads[i][0]/self._passes_done
+            self._bias_vectors[i] -= lr*self._grads[i][1]/self._passes_done
             self._grads[i] = (np.zeros(self._grads[i][0].shape),
                                 np.zeros(self._grads[i][1].shape))
         self._passes_done = 0
@@ -179,23 +203,10 @@ class NeuralNetwork(object):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    nn = NeuralNetwork((3, 2))
-    Wout = np.array([[-0.169, 0.516, 0.282],
-                    [-0.052, 0.401, -0.028]])
-    bout = np.array([[1.344],[-0.65]])
-    nn._weight_matrices = [Wout]
-    nn._bias_vectors = [bout]
-    print(nn._weight_matrices)
-    print(nn._bias_vectors)
-
-    inp = np.array([[0.33], [1.26], [-0.12]])
-    out = np.array([[.3], [.4]])
-
-    print(nn.forward(inp))
-    print(nn.loss(out))
-    print(nn._grads)
-
-    nn = NeuralNetwork((3,4,2))
+    #nn = NeuralNetwork((3,4,2), nonlinearities=LeakyReLU(0.1))
+    #nn = NeuralNetwork((3,4,2), nonlinearities=Identity())
+    #nn = NeuralNetwork((3,4,2), nonlinearities=Sigmoid())
+    nn = NeuralNetwork((3,4,2), nonlinearities=ReLU())
     losses = []
     for _ in range(3000):
         for _ in range(20):
