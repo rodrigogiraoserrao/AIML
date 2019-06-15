@@ -48,13 +48,13 @@ class NeuralNetwork(object):
         else:
             ValueError("Input has too many dimensions ({})".format(len(x.shape)))
 
-        self._intermediates = [(None, x)]
+        self._intermediates = [(None, x[::, ::])]
         acc = x
         for mat, bias in zip(self._weight_matrices, self._bias_vectors):
             pre_nonlin = np.dot(mat, acc) + bias
-            ## apply the ReLU non-linearity
-            post_nonlin = np.zeros(pre_nonlin.shape)
-            post_nonlin[pre_nonlin > 0] = pre_nonlin[pre_nonlin > 0]
+            ## apply leaky-ReLU non-linearity
+            post_nonlin = np.array(pre_nonlin)
+            post_nonlin[pre_nonlin < 0] = 0.1*pre_nonlin[pre_nonlin < 0]
             self._intermediates.append((pre_nonlin, post_nonlin))
             acc = post_nonlin[::, ::]
         return acc
@@ -80,6 +80,7 @@ class NeuralNetwork(object):
         loss = 0.5*np.sum((out - net_outs)**2)
 
         # compute the gradients in a backward fassion
+        self._passes_done += 1
         for t in range(self._depth - 2, -1, -1):
             # row vector
             if t + 1 == self._depth - 1:
@@ -88,24 +89,66 @@ class NeuralNetwork(object):
                 Wfront = self._weight_matrices[t+1] # matrix
                 preFront = self._intermediates[t+2][0] # column
                 dfdpre = np.ones(preFront.shape) # column
-                dfdpre[preFront < 0] = 0
+                dfdpre[preFront < 0] = 0.1
                 dLdpos = np.dot((dLdpos*dfdpre.T), Wfront)
             pos = self._intermediates[t][1] # column
             preFront = self._intermediates[t+1][0] # column
             dfdpre = np.ones(preFront.shape) # column
-            dfdpre[preFront < 0] = 0
-            dposdW = dfdpre*pos
-            dLdW = np.dot(dLdpos, dposdW)
+            dfdpre[preFront < 0] = 0.1
+            dposdW = np.dot(dfdpre, pos.T)
+            dLdW = dLdpos.T*dposdW
+            dLdb = dfdpre*dLdpos.T
             # accumulate
             prevW, prevb = self._grads[t]
-            self._grads[t] = (prevW + dLdW, prevb + dfdpre)
+            # print("preFront {}".format(preFront))
+            # print("dfdpre {}".format(dfdpre))
+            # print("pos.T {}".format(pos.T))
+            # print("dposdW {}".format(dposdW))
+            # print("dLdpos {}".format(dLdpos))
+            # print("dLdW {}".format(dLdW))
+            self._grads[t] = (prevW + dLdW, prevb + dLdb)
 
         return loss
 
+    def backprop(self):
+        """
+        Alters the weights and biases with the gradients stored
+        """
+        for i in range(self._depth - 1):
+            self._weight_matrices[i] -= 0.01*self._grads[i][0]/self._passes_done
+            self._bias_vectors[i] -= 0.01*self._grads[i][1]/self._passes_done
+            self._grads[i] = (np.zeros(self._grads[i][0].shape),
+                                np.zeros(self._grads[i][1].shape))
+        self._passes_done = 0
+
 if __name__ == "__main__":
-    nn = NeuralNetwork((2, 2))
+    import matplotlib.pyplot as plt
+
+    nn = NeuralNetwork((3, 2))
+    Wout = np.array([[-0.169, 0.516, 0.282],
+                    [-0.052, 0.401, -0.028]])
+    bout = np.array([[1.344],[-0.65]])
+    nn._weight_matrices = [Wout]
+    nn._bias_vectors = [bout]
     print(nn._weight_matrices)
     print(nn._bias_vectors)
-    print(nn.forward(np.array([1, 2])))
-    print(nn.loss([1, 0]))
+
+    inp = np.array([[0.33], [1.26], [-0.12]])
+    out = np.array([[.3], [.4]])
+
+    print(nn.forward(inp))
+    print(nn.loss(out))
     print(nn._grads)
+
+    nn = NeuralNetwork((3,4,2))
+    losses = []
+    for _ in range(3000):
+        for _ in range(20):
+            nn.forward(np.random.rand(3,1))
+            nn.loss(np.ones((2,1)))
+        nn.forward(np.random.rand(3,1))
+        losses.append(nn.loss(np.ones((2,1))))
+        nn.backprop()
+    print(nn.forward(np.random.rand(3,1)))
+    plt.plot(losses)
+    plt.show()
