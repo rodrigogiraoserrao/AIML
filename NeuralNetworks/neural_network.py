@@ -102,11 +102,11 @@ class NeuralNetwork(object):
             self._activation_functions = [
                 nonlinearities for idx in range(self._depth - 1)
             ]
-        elif hasattr("len", nonlinearities) and \
+        elif hasattr(nonlinearities, "__len__") and \
                                 len(nonlinearities) == self._depth - 1:
             self._activation_functions = nonlinearities[::]
         else:
-            ValueError("Could not understand the ActivationFunctions provided")
+            raise ValueError("Could not understand the ActivationFunctions provided")
         # store the intermediate computations to enable computing the gradients
         self._intermediates = []
         # store the gradients to enable batch gradient updates
@@ -140,7 +140,7 @@ class NeuralNetwork(object):
             ## apply leaky-ReLU non-linearity
             post_nonlin = nonlin(pre_nonlin)
             self._intermediates.append((pre_nonlin, post_nonlin))
-            acc = post_nonlin[::, ::]
+            acc = post_nonlin
         return acc
 
     def loss(self, output):
