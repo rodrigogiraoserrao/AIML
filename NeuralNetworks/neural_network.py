@@ -1,4 +1,54 @@
 import numpy as np
+from abc import ABC, abstractmethod
+
+class ActivationFunction(ABC):
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def forward(self, x):
+        """
+        Given a vectorial/matricial input x,
+        compute the forward pass of x through the function, elemtntwise
+        Returns a numpy.ndarray with the shape of x
+        """
+        raise NotImplementedError("ActivationFunction.forward not implemented")
+
+    @abstractmethod
+    def backward(self, x):
+        """
+        Computes the derivative of the function w.r.t. the values in x, 
+            elementwise
+        Returns a numpy.ndarray with the shape of x
+        """
+        raise NotImplementedError("ActivationFunction.backward not implemented")
+
+class Identity(ActivationFunction):
+    def __init__(self):
+        super(Identity, self).__init__()
+
+    def forward(self, x):
+        return np.array(x)
+    
+    def backward(self, x):
+        return np.ones(x.shape)
+
+class LeakyReLU(ActivationFunction):
+    def __init__(self, neg_slope=0.1):
+        super(LeakyReLU, self).__init__()
+        self.slope = 0.1
+
+    def forward(self, x):
+        out = np.array(x)
+        mask = x < 0
+        out[mask] = self.slope * x[mask]
+        return out
+
+    def backward(self, x):
+        out = np.ones(x.shape)
+        mask = x < 0
+        out[mask] = self.slope * x[mask]
+        return out
 
 class NeuralNetwork(object):
     def __init__(self, sizes):
