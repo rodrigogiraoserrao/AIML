@@ -5,6 +5,9 @@ class ActivationFunction(ABC):
     def __init__(self):
         pass
 
+    def __call__(self, x):
+        return self.forward(x)
+
     @abstractmethod
     def forward(self, x):
         """
@@ -46,8 +49,7 @@ class LeakyReLU(ActivationFunction):
 
     def backward(self, x):
         out = np.ones(x.shape)
-        mask = x < 0
-        out[mask] = self.slope * x[mask]
+        out[x < 0] = self.slope
         return out
 
 class NeuralNetwork(object):
@@ -72,6 +74,9 @@ class NeuralNetwork(object):
             (1/np.sqrt(sizes[idx]*sizes[idx+1])) * \
                 # vector with random entries
                 np.random.randn(sizes[idx+1], 1) for idx in range(self._depth - 1)
+        ]
+        self._activation_functions = [
+            LeakyReLU(0.1) for idx in range(self._depth - 1)
         ]
         # store the intermediate computations to enable computing the gradients
         self._intermediates = []
@@ -100,11 +105,11 @@ class NeuralNetwork(object):
 
         self._intermediates = [(None, x[::, ::])]
         acc = x
-        for mat, bias in zip(self._weight_matrices, self._bias_vectors):
+        for mat, bias, nonlin in zip(self._weight_matrices, self._bias_vectors,
+                                        self._activation_functions):
             pre_nonlin = np.dot(mat, acc) + bias
             ## apply leaky-ReLU non-linearity
-            post_nonlin = np.array(pre_nonlin)
-            post_nonlin[pre_nonlin < 0] = 0.1*pre_nonlin[pre_nonlin < 0]
+            post_nonlin = nonlin(pre_nonlin)
             self._intermediates.append((pre_nonlin, post_nonlin))
             acc = post_nonlin[::, ::]
         return acc
@@ -138,13 +143,13 @@ class NeuralNetwork(object):
             else:
                 Wfront = self._weight_matrices[t+1] # matrix
                 preFront = self._intermediates[t+2][0] # column
-                dfdpre = np.ones(preFront.shape) # column
-                dfdpre[preFront < 0] = 0.1
+                act = self._activation_functions[t+1]
+                dfdpre = act.backward(preFront)
                 dLdpos = np.dot((dLdpos*dfdpre.T), Wfront)
             pos = self._intermediates[t][1] # column
             preFront = self._intermediates[t+1][0] # column
-            dfdpre = np.ones(preFront.shape) # column
-            dfdpre[preFront < 0] = 0.1
+            act = self._activation_functions[t]
+            dfdpre = act.backward(preFront)
             dposdW = np.dot(dfdpre, pos.T)
             dLdW = dLdpos.T*dposdW
             dLdb = dfdpre*dLdpos.T
