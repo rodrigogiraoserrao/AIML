@@ -23,7 +23,14 @@ class NeuralNetwork(object):
                 # vector with random entries
                 np.random.randn(sizes[idx+1], 1) for idx in range(self._depth - 1)
         ]
+        # store the intermediate computations to enable computing the gradients
         self._intermediates = []
+        # store the gradients to enable batch gradient updates
+        self._grads = []
+        for W, b in zip(self._weight_matrices, self._bias_vectors):
+            self._grads.append((np.zeros(W.shape), np.zeros(b.shape)))
+        # store the number of backpasses we already did, so we can average
+        self._passes_done = 0
 
     def forward(self, x):
         """
@@ -41,7 +48,7 @@ class NeuralNetwork(object):
         else:
             ValueError("Input has too many dimensions ({})".format(len(x.shape)))
 
-        self._intermediates = []
+        self._intermediates = [(None, x)]
         acc = x
         for mat, bias in zip(self._weight_matrices, self._bias_vectors):
             pre_nonlin = np.dot(mat, acc) + bias
@@ -72,12 +79,33 @@ class NeuralNetwork(object):
         net_outs = self._intermediates[-1][-1]
         loss = 0.5*np.sum((out - net_outs)**2)
 
+        # compute the gradients in a backward fassion
+        for t in range(self._depth - 2, -1, -1):
+            # row vector
+            if t + 1 == self._depth - 1:
+                dLdpos = net_outs.T - out.T # row
+            else:
+                Wfront = self._weight_matrices[t+1] # matrix
+                preFront = self._intermediates[t+2][0] # column
+                dfdpre = np.ones(preFront.shape) # column
+                dfdpre[preFront < 0] = 0
+                dLdpos = np.dot((dLdpos*dfdpre.T), Wfront)
+            pos = self._intermediates[t][1] # column
+            preFront = self._intermediates[t+1][0] # column
+            dfdpre = np.ones(preFront.shape) # column
+            dfdpre[preFront < 0] = 0
+            dposdW = dfdpre*pos
+            dLdW = np.dot(dLdpos, dposdW)
+            # accumulate
+            prevW, prevb = self._grads[t]
+            self._grads[t] = (prevW + dLdW, prevb + dfdpre)
+
         return loss
 
 if __name__ == "__main__":
-    nn = NeuralNetwork((2, 5, 2))
+    nn = NeuralNetwork((2, 2))
     print(nn._weight_matrices)
     print(nn._bias_vectors)
-
-    print(nn.forward(np.array([1,2])))
-    print(nn._intermediates)
+    print(nn.forward(np.array([1, 2])))
+    print(nn.loss([1, 0]))
+    print(nn._grads)
