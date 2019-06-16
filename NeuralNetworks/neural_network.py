@@ -67,6 +67,30 @@ class Sigmoid(ActivationFunction):
         forward = self.forward(x)
         return forward*(1 - forward)
 
+class LossFunction(ABC):
+    def __init__(self):
+        pass
+
+    def __cal__(self, output, expected):
+        return self.loss(output, expected)
+
+    @abstractmethod
+    def loss(self, output, expected):
+        """
+        Given the output of the neural network and the target outcome,
+        compute and return the loss (a float)
+        """
+        raise NotImplementedError("LossFunction.loss not implemented")
+
+    @abstractmethod
+    def backward(self, output, expected):
+        """
+        Given the output of the neural network and the target outcome,
+        compute and return the derivative of the loss function wrt the output.
+        The return value should have the same shape as the `output` arg
+        """
+        raise NotImplementedError("LossFunction.loss not implemented")
+
 class NeuralNetwork(object):
     def __init__(self, sizes, *, nonlinearities=None, lr=0.01):
         """
@@ -171,9 +195,6 @@ class NeuralNetwork(object):
                 dLdpos = net_outs.T - out.T # row
             else:
                 Wfront = self._weight_matrices[t+1] # matrix
-                # preFront = self._intermediates[t+2][0] # column
-                # act = self._activation_functions[t+1]
-                # dfdpre = act.backward(preFront)
                 dLdpos = np.dot((dLdpos*dfdpre.T), Wfront)
             pos = self._intermediates[t][1] # column
             preFront = self._intermediates[t+1][0] # column
