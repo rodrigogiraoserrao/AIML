@@ -161,14 +161,14 @@ class NeuralNetwork(object):
         else:
             ValueError("Input has too many dimensions ({})".format(len(out.shape)))
         net_outs = self._intermediates[-1][-1]
-        loss = 0.5*np.sum((out - net_outs)**2) / self._sizes[-1]
+        loss = np.sum((out - net_outs)**2)
 
         # compute the gradients in a backward fassion
         self._passes_done += 1
         for t in range(self._depth - 2, -1, -1):
             # row vector
             if t + 1 == self._depth - 1:
-                dLdpos = (net_outs.T - out.T) / self._sizes[-1] # row
+                dLdpos = 2*(net_outs.T - out.T) # row
             else:
                 Wfront = self._weight_matrices[t+1] # matrix
                 # preFront = self._intermediates[t+2][0] # column
