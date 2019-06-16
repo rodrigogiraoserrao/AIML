@@ -71,7 +71,7 @@ class LossFunction(ABC):
     def __init__(self):
         pass
 
-    def __cal__(self, output, expected):
+    def __call__(self, output, expected):
         return self.loss(output, expected)
 
     @abstractmethod
@@ -91,8 +91,19 @@ class LossFunction(ABC):
         """
         raise NotImplementedError("LossFunction.loss not implemented")
 
+class MSE(LossFunction):
+    def __init__(self):
+        super(MSE, self).__init__()
+
+    def loss(self, output, expected):
+        return np.sum((output - expected)**2)
+
+    def backward(self, output, expected):
+        return 2*(output - expected)
+
 class NeuralNetwork(object):
-    def __init__(self, sizes, *, nonlinearities=None, lr=0.01):
+    def __init__(self, sizes, *, nonlinearities=None,
+                                loss_function=None, lr=0.01):
         """
         Initializes a fully connected neural network with len(sizes) layers,
             where sizes[0] is the input size, sizes[-1] is the output size and
@@ -102,6 +113,8 @@ class NeuralNetwork(object):
             or a single instance of an ActivationFunction, in which case that
             same activation function is used in between every layer
             Defaults to LeakyReLU(0.1)
+        Can take an additional argument loss_function, a LossFunction object
+            specifying the loss function to be used. Defaults to MSE.
         """
         self._sizes = sizes
         self._depth = len(sizes)
@@ -131,6 +144,14 @@ class NeuralNetwork(object):
             self._activation_functions = nonlinearities[::]
         else:
             raise ValueError("Could not understand the ActivationFunctions provided")
+
+        if loss_function is None:
+            self._loss_function = MSE()
+        elif isinstance(loss_function, LossFunction):
+            self._loss_function = loss_function
+        else:
+            raise ValueError("Could not understand the LossFunction provided")
+
         # store the intermediate computations to enable computing the gradients
         self._intermediates = []
         # store the gradients to enable batch gradient updates
@@ -185,14 +206,14 @@ class NeuralNetwork(object):
         else:
             ValueError("Input has too many dimensions ({})".format(len(out.shape)))
         net_outs = self._intermediates[-1][-1]
-        loss = np.sum((out - net_outs)**2)
+        loss = self._loss_function(net_outs, output)
 
         # compute the gradients in a backward fassion
         self._passes_done += 1
         for t in range(self._depth - 2, -1, -1):
             # row vector
             if t + 1 == self._depth - 1:
-                dLdpos = 2*(net_outs.T - out.T) # row
+                dLdpos = self._loss_function.backward(net_outs, output).T # row
             else:
                 Wfront = self._weight_matrices[t+1] # matrix
                 dLdpos = np.dot((dLdpos*dfdpre.T), Wfront)
