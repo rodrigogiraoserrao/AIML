@@ -78,7 +78,8 @@ class LossFunction(ABC):
     def loss(self, output, expected):
         """
         Given the output of the neural network and the target outcome,
-        compute and return the loss (a float)
+            compute and return the loss (a float)
+        Note that the shape of `expected` might depend on the function itself.
         """
         raise NotImplementedError("LossFunction.loss not implemented")
 
@@ -87,19 +88,58 @@ class LossFunction(ABC):
         """
         Given the output of the neural network and the target outcome,
         compute and return the derivative of the loss function wrt the output.
+        Note that the shape of `expected` might depend on the function itself.
         The return value should have the same shape as the `output` arg
         """
         raise NotImplementedError("LossFunction.loss not implemented")
 
 class MSE(LossFunction):
+    """
+    Implement the MSE loss function, as per
+    https://pytorch.org/docs/stable/nn.html#mseloss
+    """
     def __init__(self):
         super(MSE, self).__init__()
 
     def loss(self, output, expected):
-        return np.sum((output - expected)**2)
+        """
+        Computes the mean squared L^2 distance between output and expected
+        Both arguments should be vectors of the same shape
+        """
+        return np.mean((output - expected)**2)
 
     def backward(self, output, expected):
-        return 2*(output - expected)
+        """
+        Computes the derivative of the mean squared L^2 distance between `output`
+            and `expected` with respect to `output`
+        """
+        return 2*(output - expected)/output.size
+
+class CrossEntropyLoss(LossFunction):
+    """
+    Implement the CrossEntropyLoss as per
+    https://pytorch.org/docs/stable/nn.html#crossentropyloss
+    """
+    def __init__(self):
+        super(CrossEntropyLoss, self).__init__()
+
+    def loss(self, output, expected):
+        """
+        Computes the cross entropy loss given that the correct class
+            is the one indexed by `expected` (an integer).
+        Assumes that `output` is a column vector.
+        """
+        return -output[expected, 0] + np.log(np.sum(np.exp(output)))
+
+    def backward(self, output, expected):
+        """
+        Computes the derivative of the cross entropy w.r.t. output,
+            assuming the correct class is indexed by `expected` (an integer)
+        """
+        exp = np.exp(output)
+        grad = exp / np.sum(exp)
+        grad[expected] -= 1
+        return grad
 
 class NeuralNetwork(object):
     def __init__(self, sizes, *, nonlinearities=None,
