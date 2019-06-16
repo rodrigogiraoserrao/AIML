@@ -171,9 +171,9 @@ class NeuralNetwork(object):
                 dLdpos = net_outs.T - out.T # row
             else:
                 Wfront = self._weight_matrices[t+1] # matrix
-                preFront = self._intermediates[t+2][0] # column
-                act = self._activation_functions[t+1]
-                dfdpre = act.backward(preFront)
+                # preFront = self._intermediates[t+2][0] # column
+                # act = self._activation_functions[t+1]
+                # dfdpre = act.backward(preFront)
                 dLdpos = np.dot((dLdpos*dfdpre.T), Wfront)
             pos = self._intermediates[t][1] # column
             preFront = self._intermediates[t+1][0] # column
