@@ -69,7 +69,7 @@ for col in range(images.shape[1]):
 
 accuracy = round(100*rights/(rights+wrongs), 2)
 # 92.78% with seed 123456789 for cross entropy loss
-# 85.39% with seed 123456789 for cross entropy loss
+# 85.39% with seed 123456789 for L2 loss
 print("Total accuracy of {}%".format(accuracy))
 plt.plot(losses)
 plt.title("Loss over training; final test accuracy of {}%".format(accuracy))
